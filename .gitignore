@@ -1,0 +1,46 @@
+# Build artifacts
+*.o
+*.so
+*.a
+*.out
+booknote
+build/
+bin/
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+core
+vgcore.*
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+*.gcda
+*.gcno
+*.gcov
+coverage/
+
+# Dependencies
+.deps/
+
+# Personal notes/scratch
+scratch/
+*.local
+
+# SQLite databases (for development)
+*.db
+*.sqlite
+*.sqlite3
+!tests/fixtures/*.db
+
+# Compiled documentation
+docs/_build/
