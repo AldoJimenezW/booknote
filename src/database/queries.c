@@ -291,15 +291,78 @@ BnError db_note_get_by_id(Database *db, int id, Note **out_note) {
     return BN_ERROR_UNKNOWN;
 }
 
-BnError db_note_get_by_book(Database *db, int book_id, Note ***out_notes, int *out_count) {
-    // TODO: Implement (similar to db_book_get_all but with WHERE clause)
-    (void)db;
-    (void)book_id;
-    (void)out_notes;
-    (void)out_count;
-    return BN_ERROR_UNKNOWN;
-}
 
+BnError db_note_get_by_book(Database *db, int book_id, Note ***out_notes, int *out_count) {
+    if (!db || !db->handle || !out_notes || !out_count || book_id <= 0) {
+        return BN_ERROR_INVALID_ARG;
+    }
+    
+    const char *sql = 
+        "SELECT id, book_id, content, page_number, created_at, updated_at "
+        "FROM notes WHERE book_id = ? ORDER BY created_at;";
+    
+    sqlite3_stmt *stmt;
+    int rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        return BN_ERROR_DATABASE;
+    }
+    
+    sqlite3_bind_int(stmt, 1, book_id);
+    
+    // Count rows
+    int count = 0;
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        count++;
+    }
+    sqlite3_reset(stmt);
+    sqlite3_bind_int(stmt, 1, book_id);
+    
+    if (count == 0) {
+        *out_notes = NULL;
+        *out_count = 0;
+        sqlite3_finalize(stmt);
+        return BN_SUCCESS;
+    }
+    
+    // Allocate array
+    Note **notes = calloc(count, sizeof(Note *));
+    if (!notes) {
+        sqlite3_finalize(stmt);
+        return BN_ERROR_OUT_OF_MEMORY;
+    }
+    
+    // Fetch rows
+    int i = 0;
+    while (sqlite3_step(stmt) == SQLITE_ROW && i < count) {
+        Note *note = calloc(1, sizeof(Note));
+        if (!note) {
+            for (int j = 0; j < i; j++) {
+                note_free(notes[j]);
+            }
+            free(notes);
+            sqlite3_finalize(stmt);
+            return BN_ERROR_OUT_OF_MEMORY;
+        }
+        
+        note->id = sqlite3_column_int(stmt, 0);
+        note->book_id = sqlite3_column_int(stmt, 1);
+        
+        const char *content = (const char *)sqlite3_column_text(stmt, 2);
+        note->content = strdup(content);
+        
+        note->page_number = sqlite3_column_int(stmt, 3);
+        note->created_at = (time_t)sqlite3_column_int64(stmt, 4);
+        note->updated_at = (time_t)sqlite3_column_int64(stmt, 5);
+        
+        notes[i++] = note;
+    }
+    
+    *out_notes = notes;
+    *out_count = count;
+    
+    sqlite3_finalize(stmt);
+    return BN_SUCCESS;
+}
 BnError db_note_update(Database *db, const Note *note) {
     // TODO: Implement (similar to db_book_update)
     (void)db;
@@ -315,10 +378,76 @@ BnError db_note_delete(Database *db, int id) {
 }
 
 BnError db_note_search(Database *db, const char *query, Note ***out_notes, int *out_count) {
-    // TODO: Implement (FTS5 query)
-    (void)db;
-    (void)query;
-    (void)out_notes;
-    (void)out_count;
-    return BN_ERROR_UNKNOWN;
+    if (!db || !db->handle || !query || !out_notes || !out_count) {
+        return BN_ERROR_INVALID_ARG;
+    }
+    
+    const char *sql = 
+        "SELECT n.id, n.book_id, n.content, n.page_number, n.created_at, n.updated_at "
+        "FROM notes n "
+        "JOIN notes_fts fts ON n.id = fts.rowid "
+        "WHERE fts.content MATCH ? "
+        "ORDER BY n.created_at DESC;";
+    
+    sqlite3_stmt *stmt;
+    int rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        return BN_ERROR_DATABASE;
+    }
+    
+    sqlite3_bind_text(stmt, 1, query, -1, SQLITE_TRANSIENT);
+    
+    // Count rows
+    int count = 0;
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        count++;
+    }
+    sqlite3_reset(stmt);
+    sqlite3_bind_text(stmt, 1, query, -1, SQLITE_TRANSIENT);
+    
+    if (count == 0) {
+        *out_notes = NULL;
+        *out_count = 0;
+        sqlite3_finalize(stmt);
+        return BN_SUCCESS;
+    }
+    
+    // Allocate array
+    Note **notes = calloc(count, sizeof(Note *));
+    if (!notes) {
+        sqlite3_finalize(stmt);
+        return BN_ERROR_OUT_OF_MEMORY;
+    }
+    
+    // Fetch rows
+    int i = 0;
+    while (sqlite3_step(stmt) == SQLITE_ROW && i < count) {
+        Note *note = calloc(1, sizeof(Note));
+        if (!note) {
+            for (int j = 0; j < i; j++) {
+                note_free(notes[j]);
+            }
+            free(notes);
+            sqlite3_finalize(stmt);
+            return BN_ERROR_OUT_OF_MEMORY;
+        }
+        
+        note->id = sqlite3_column_int(stmt, 0);
+        note->book_id = sqlite3_column_int(stmt, 1);
+        
+        const char *content = (const char *)sqlite3_column_text(stmt, 2);
+        note->content = strdup(content);
+        
+        note->page_number = sqlite3_column_int(stmt, 3);
+        note->created_at = (time_t)sqlite3_column_int64(stmt, 4);
+        note->updated_at = (time_t)sqlite3_column_int64(stmt, 5);
+        
+        notes[i++] = note;
+    }
+    
+    *out_notes = notes;
+    *out_count = count;
+    
+    sqlite3_finalize(stmt);
+    return BN_SUCCESS;
 }

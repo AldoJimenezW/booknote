@@ -1,128 +1,58 @@
 #define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "database/db.h"
-#include "database/schema.h"
-#include "database/queries.h"
-#include "core/book.h"
-#include "core/note.h"
+#include "cli/commands.h"
 #include "utils/error.h"
 
 int main(int argc, char **argv) {
-    (void)argc;
-    (void)argv;
+    // No command provided
+    if (argc < 2) {
+        cmd_help(0, NULL);
+        return 1;
+    }
     
-    printf("=== booknote v0.1.0-dev ===\n\n");
+    char *command = argv[1];
     
-    // Open database
-    printf("[1] Opening database...\n");
+    // Commands that don't need database
+    if (strcmp(command, "help") == 0 || strcmp(command, "--help") == 0 || strcmp(command, "-h") == 0) {
+        return cmd_help(argc, argv);
+    }
+    
+    if (strcmp(command, "version") == 0 || strcmp(command, "--version") == 0 || strcmp(command, "-v") == 0) {
+        return cmd_version();
+    }
+    
+    // Open database for all other commands
     Database *db = NULL;
     BnError err = db_open(&db, NULL);
     if (err != BN_SUCCESS) {
-        bn_print_error(err, "Failed to open database");
-        return 1;
-    }
-    printf("    Database: %s\n", db->path);
-    
-    // Check schema version
-    int version = 0;
-    err = schema_get_version(db->handle, &version);
-    if (err == BN_SUCCESS) {
-        printf("    Schema version: %d\n\n", version);
-    }
-    
-    // Create and insert a book
-    printf("[2] Creating book...\n");
-    Book *book = NULL;
-    err = book_create(&book, "The C Programming Language", "/home/user/books/k&r.pdf");
-    if (err != BN_SUCCESS) {
-        bn_print_error(err, "book_create");
-        db_close(db);
+        bn_print_error(err, "opening database");
         return 1;
     }
     
-    book_set_author(book, "Brian Kernighan & Dennis Ritchie");
-    book_set_year(book, 1978);
-    book_set_isbn(book, "0131103628");
+    // Route to command
+    int result = 0;
     
-    printf("    Title: %s\n", book->title);
-    printf("    Author: %s\n", book->author);
-    printf("    Year: %d\n", book->year);
-    
-    printf("[3] Inserting book into database...\n");
-    err = db_book_insert(db, book);
-    if (err != BN_SUCCESS) {
-        bn_print_error(err, "db_book_insert");
-        book_free(book);
-        db_close(db);
-        return 1;
-    }
-    printf("    Book ID: %d\n\n", book->id);
-    
-    // Create and insert notes
-    printf("[4] Creating notes...\n");
-    Note *note1 = NULL;
-    err = note_create(&note1, book->id, "Pointers are powerful but need careful handling", 45);
-    if (err != BN_SUCCESS) {
-        bn_print_error(err, "note_create");
-        book_free(book);
-        db_close(db);
-        return 1;
-    }
-    
-    err = db_note_insert(db, note1);
-    if (err != BN_SUCCESS) {
-        bn_print_error(err, "db_note_insert");
-        note_free(note1);
-        book_free(book);
-        db_close(db);
-        return 1;
-    }
-    printf("    Note 1 ID: %d (page %d)\n", note1->id, note1->page_number);
-    
-    Note *note2 = NULL;
-    err = note_create(&note2, book->id, "Always use const for read-only parameters", 67);
-    if (err == BN_SUCCESS) {
-        err = db_note_insert(db, note2);
-        if (err == BN_SUCCESS) {
-            printf("    Note 2 ID: %d (page %d)\n\n", note2->id, note2->page_number);
-        }
-    }
-    
-    // Retrieve book from database
-    printf("[5] Retrieving book from database...\n");
-    Book *retrieved_book = NULL;
-    err = db_book_get_by_id(db, book->id, &retrieved_book);
-    if (err != BN_SUCCESS) {
-        bn_print_error(err, "db_book_get_by_id");
+    if (strcmp(command, "add") == 0) {
+        result = cmd_add(db, argc, argv);
+    } else if (strcmp(command, "list") == 0) {
+        result = cmd_list(db, argc, argv);
+    } else if (strcmp(command, "show") == 0) {
+        result = cmd_show(db, argc, argv);
+    } else if (strcmp(command, "note") == 0) {
+        result = cmd_note(db, argc, argv);
+    } else if (strcmp(command, "search") == 0) {
+        result = cmd_search(db, argc, argv);
+    } else if (strcmp(command, "delete") == 0) {
+        result = cmd_delete(db, argc, argv);
     } else {
-        printf("    Retrieved: %s by %s\n", retrieved_book->title, retrieved_book->author);
-        book_free(retrieved_book);
+        fprintf(stderr, "Error: Unknown command '%s'\n", command);
+        fprintf(stderr, "Run 'booknote help' for usage information.\n");
+        result = 1;
     }
     
-    // List all books
-    printf("\n[6] Listing all books...\n");
-    Book **books = NULL;
-    int count = 0;
-    err = db_book_get_all(db, &books, &count);
-    if (err != BN_SUCCESS) {
-        bn_print_error(err, "db_book_get_all");
-    } else {
-        printf("    Total books: %d\n", count);
-        for (int i = 0; i < count; i++) {
-            printf("    [%d] %s\n", books[i]->id, books[i]->title);
-            book_free(books[i]);
-        }
-        free(books);
-    }
-    
-    // Cleanup
-    printf("\n[7] Cleaning up...\n");
-    note_free(note1);
-    note_free(note2);
-    book_free(book);
     db_close(db);
-    
-    printf("    Done!\n");
-    return 0;
+    return result;
 }

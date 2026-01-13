@@ -10,7 +10,8 @@ SRCS = src/main.c \
        src/core/note.c \
        src/database/db.c \
        src/database/schema.c \
-       src/database/queries.c
+       src/database/queries.c \
+       src/cli/commands.c
 
 OBJS = $(SRCS:.c=.o)
 
