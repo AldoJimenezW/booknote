@@ -4,6 +4,7 @@
 *.a
 *.out
 booknote
+booknote-gui
 build/
 bin/
 
