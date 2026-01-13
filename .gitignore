@@ -12,8 +12,10 @@ bin/
 *.su
 *.idb
 *.pdb
-core
 vgcore.*
+
+# Core dumps (be specific to avoid blocking src/core/)
+core.[0-9]*
 
 # IDE/Editor files
 .vscode/

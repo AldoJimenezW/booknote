@@ -7,8 +7,10 @@ TARGET = booknote
 SRCS = src/main.c \
        src/utils/error.c \
        src/core/book.c \
+       src/core/note.c \
        src/database/db.c \
-       src/database/schema.c
+       src/database/schema.c \
+       src/database/queries.c
 
 OBJS = $(SRCS:.c=.o)
 
