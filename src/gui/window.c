@@ -37,6 +37,85 @@ static gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer dat
     return FALSE;
 }
 
+static void on_menu_quit(GtkWidget *widget, gpointer data) {
+    (void)widget;
+    (void)data;
+    gtk_main_quit();
+}
+
+static void on_menu_toggle_notes(GtkWidget *widget, gpointer data) {
+    (void)widget;
+    MainWindow *win = (MainWindow *)data;
+    window_toggle_notes(win);
+}
+
+static void on_menu_toggle_sidebar(GtkWidget *widget, gpointer data) {
+    (void)widget;
+    MainWindow *win = (MainWindow *)data;
+    window_toggle_sidebar(win);
+}
+
+static void on_menu_about(GtkWidget *widget, gpointer data) {
+    (void)widget;
+    (void)data;
+    
+    GtkWidget *dialog = gtk_message_dialog_new(
+        NULL,
+        GTK_DIALOG_MODAL,
+        GTK_MESSAGE_INFO,
+        GTK_BUTTONS_OK,
+        "booknote v0.2-dev\n\n"
+        "Note-taking for technical books\n"
+        "Built with GTK3 and Poppler\n\n"
+        "https://github.com/AldoJimenezW/booknote"
+    );
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+}
+
+static GtkWidget* create_menu_bar(MainWindow *win) {
+    GtkWidget *menu_bar = gtk_menu_bar_new();
+    
+    // File menu
+    GtkWidget *file_menu = gtk_menu_new();
+    GtkWidget *file_item = gtk_menu_item_new_with_label("File");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_item), file_menu);
+    
+    GtkWidget *quit_item = gtk_menu_item_new_with_label("Quit");
+    g_signal_connect(quit_item, "activate", G_CALLBACK(on_menu_quit), win);
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), quit_item);
+    
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), file_item);
+    
+    // View menu
+    GtkWidget *view_menu = gtk_menu_new();
+    GtkWidget *view_item = gtk_menu_item_new_with_label("View");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(view_item), view_menu);
+    
+    GtkWidget *toggle_sidebar_item = gtk_menu_item_new_with_label("Toggle Sidebar");
+    g_signal_connect(toggle_sidebar_item, "activate", G_CALLBACK(on_menu_toggle_sidebar), win);
+    gtk_menu_shell_append(GTK_MENU_SHELL(view_menu), toggle_sidebar_item);
+    
+    GtkWidget *toggle_notes_item = gtk_menu_item_new_with_label("Toggle Notes");
+    g_signal_connect(toggle_notes_item, "activate", G_CALLBACK(on_menu_toggle_notes), win);
+    gtk_menu_shell_append(GTK_MENU_SHELL(view_menu), toggle_notes_item);
+    
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), view_item);
+    
+    // Help menu
+    GtkWidget *help_menu = gtk_menu_new();
+    GtkWidget *help_item = gtk_menu_item_new_with_label("Help");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(help_item), help_menu);
+    
+    GtkWidget *about_item = gtk_menu_item_new_with_label("About");
+    g_signal_connect(about_item, "activate", G_CALLBACK(on_menu_about), win);
+    gtk_menu_shell_append(GTK_MENU_SHELL(help_menu), about_item);
+    
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), help_item);
+    
+    return menu_bar;
+}
+
 MainWindow* window_create(Database *db) {
     MainWindow *win = calloc(1, sizeof(MainWindow));
     if (!win) return NULL;
@@ -56,8 +135,16 @@ MainWindow* window_create(Database *db) {
     g_signal_connect(win->window, "key-press-event", G_CALLBACK(on_key_press), win);
     
     // Main horizontal paned (sidebar | content)
+    // Create main container
+    GtkWidget *main_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_container_add(GTK_CONTAINER(win->window), main_vbox);
+    
+    // Add menu bar
+    GtkWidget *menu_bar = create_menu_bar(win);
+    gtk_box_pack_start(GTK_BOX(main_vbox), menu_bar, FALSE, FALSE, 0);
+
     win->main_paned = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
-    gtk_container_add(GTK_CONTAINER(win->window), win->main_paned);
+    gtk_box_pack_start(GTK_BOX(main_vbox), win->main_paned, TRUE, TRUE, 0);
     
     // Left panel - Book sidebar
     win->book_sidebar = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
