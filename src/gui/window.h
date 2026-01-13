@@ -27,6 +27,8 @@ typedef struct {
     // State
     Database *db;
     gboolean notes_visible;
+    // Current state
+    int current_book_id;
     gboolean sidebar_visible;
 } MainWindow;
 

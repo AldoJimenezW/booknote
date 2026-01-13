@@ -1,4 +1,6 @@
 #include "window.h"
+#include "booklist.h"
+#include "notesview.h"
 #include <stdlib.h>
 
 #define WINDOW_TITLE "booknote"
@@ -35,6 +37,24 @@ static gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer dat
     }
     
     return FALSE;
+}
+
+static void on_book_selected(GtkTreeView *view, gpointer data) {
+    (void)view;
+    MainWindow *win = (MainWindow *)data;
+    
+    int book_id = booklist_get_selected_id(GTK_TREE_VIEW(win->book_list));
+    if (book_id <= 0) {
+        notesview_clear(GTK_TEXT_VIEW(win->notes_view));
+        return;
+    }
+    
+    win->current_book_id = book_id;
+    
+    // Load notes for selected book
+    notesview_load_notes(GTK_TEXT_VIEW(win->notes_view), win->db, book_id);
+    
+    printf("Book selected: ID %d\n", book_id);
 }
 
 static void on_menu_quit(GtkWidget *widget, gpointer data) {
@@ -122,6 +142,7 @@ MainWindow* window_create(Database *db) {
     
     win->db = db;
     win->notes_visible = TRUE;
+    win->current_book_id = -1;
     win->sidebar_visible = TRUE;
     
     // Create main window
@@ -160,8 +181,23 @@ MainWindow* window_create(Database *db) {
                                    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
     
     // Tree view for books (placeholder)
+    // Tree view for books
     win->book_list = gtk_tree_view_new();
+    
+    // Setup view
+    booklist_setup_view(GTK_TREE_VIEW(win->book_list));
+    
+    // Load books from database
+    GtkTreeModel *model = booklist_create_model(db);
+    gtk_tree_view_set_model(GTK_TREE_VIEW(win->book_list), model);
+    g_object_unref(model);
+    
+    // Connect selection signal
+    GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(win->book_list));
+    g_signal_connect(selection, "changed", G_CALLBACK(on_book_selected), win);
+    
     gtk_container_add(GTK_CONTAINER(sidebar_scroll), win->book_list);
+
     gtk_box_pack_start(GTK_BOX(win->book_sidebar), sidebar_scroll, TRUE, TRUE, 0);
     
     // Add button
