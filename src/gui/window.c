@@ -45,14 +45,14 @@ static void on_book_selected(GtkTreeView *view, gpointer data) {
     
     int book_id = booklist_get_selected_id(GTK_TREE_VIEW(win->book_list));
     if (book_id <= 0) {
-        notesview_clear(GTK_TEXT_VIEW(win->notes_view));
+        notespanel_clear(win->notes_panel);
         return;
     }
     
     win->current_book_id = book_id;
     
     // Load notes for selected book
-    notesview_load_notes(GTK_TEXT_VIEW(win->notes_view), win->db, book_id);
+    notespanel_load_book(win->notes_panel, book_id);
     
     printf("Book selected: ID %d\n", book_id);
 }
@@ -238,29 +238,9 @@ MainWindow* window_create(Database *db) {
     
     gtk_paned_pack1(GTK_PANED(win->content_paned), win->pdf_container, TRUE, TRUE);
     
-    // Right panel - Notes
-    win->notes_container = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-    gtk_widget_set_size_request(win->notes_container, NOTES_WIDTH, -1);
-    
-    GtkWidget *notes_label = gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(notes_label), "<b>Notes</b>");
-    gtk_box_pack_start(GTK_BOX(win->notes_container), notes_label, FALSE, FALSE, 10);
-    
-    // Notes view
-    GtkWidget *notes_scroll = gtk_scrolled_window_new(NULL, NULL);
-    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(notes_scroll),
-                                   GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-    
-    win->notes_view = gtk_text_view_new();
-    gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(win->notes_view), GTK_WRAP_WORD);
-    gtk_container_add(GTK_CONTAINER(notes_scroll), win->notes_view);
-    gtk_box_pack_start(GTK_BOX(win->notes_container), notes_scroll, TRUE, TRUE, 0);
-    
-    // Add note button
-    GtkWidget *add_note_button = gtk_button_new_with_label("+ Add Note");
-    gtk_box_pack_start(GTK_BOX(win->notes_container), add_note_button, FALSE, FALSE, 5);
-    
-    gtk_paned_pack2(GTK_PANED(win->content_paned), win->notes_container, FALSE, TRUE);
+   // Right panel - Notes
+    win->notes_panel = notespanel_create(db);
+    gtk_paned_pack2(GTK_PANED(win->content_paned), win->notes_panel->container, FALSE, TRUE); 
     
     // Set initial paned positions
     gtk_paned_set_position(GTK_PANED(win->main_paned), SIDEBAR_WIDTH);

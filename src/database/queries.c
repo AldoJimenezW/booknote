@@ -368,17 +368,59 @@ BnError db_note_get_by_book(Database *db, int book_id, Note ***out_notes, int *o
 }
 
 BnError db_note_update(Database *db, const Note *note) {
-    // TODO: Implement (similar to db_book_update)
-    (void)db;
-    (void)note;
-    return BN_ERROR_UNKNOWN;
+    if (!db || !db->handle || !note || note->id <= 0) {
+        return BN_ERROR_INVALID_ARG;
+    }
+    
+    const char *sql = 
+        "UPDATE notes SET title = ?, content = ?, page_number = ?, updated_at = ? "
+        "WHERE id = ?;";
+    
+    sqlite3_stmt *stmt;
+    int rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        return BN_ERROR_DATABASE;
+    }
+    
+    sqlite3_bind_text(stmt, 1, note->title, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, note->content, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 3, note->page_number);
+    sqlite3_bind_int64(stmt, 4, (sqlite3_int64)time(NULL));
+    sqlite3_bind_int(stmt, 5, note->id);
+    
+    rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+    
+    if (rc != SQLITE_DONE) {
+        return BN_ERROR_DATABASE;
+    }
+    
+    return BN_SUCCESS;
 }
 
 BnError db_note_delete(Database *db, int id) {
-    // TODO: Implement (similar to db_book_delete)
-    (void)db;
-    (void)id;
-    return BN_ERROR_UNKNOWN;
+    if (!db || !db->handle || id <= 0) {
+        return BN_ERROR_INVALID_ARG;
+    }
+    
+    const char *sql = "DELETE FROM notes WHERE id = ?;";
+    
+    sqlite3_stmt *stmt;
+    int rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        return BN_ERROR_DATABASE;
+    }
+    
+    sqlite3_bind_int(stmt, 1, id);
+    
+    rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+    
+    if (rc != SQLITE_DONE) {
+        return BN_ERROR_DATABASE;
+    }
+    
+    return BN_SUCCESS;
 }
 
 BnError db_note_search(Database *db, const char *query, Note ***out_notes, int *out_count) {

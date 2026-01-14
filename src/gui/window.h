@@ -2,6 +2,7 @@
 #define BOOKNOTE_WINDOW_H
 
 #include <gtk/gtk.h>
+#include "notesview.h"
 #include "../database/db.h"
 
 /**
@@ -22,7 +23,7 @@ typedef struct {
     
     // Right panel (notes)
     GtkWidget *notes_container;
-    GtkWidget *notes_view;
+    NotesPanel *notes_panel;
     
     // State
     Database *db;
