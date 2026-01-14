@@ -12,19 +12,20 @@ typedef struct {
     GtkWidget *window;
     GtkWidget *main_paned;      // Horizontal split
     GtkWidget *content_paned;   // Vertical split (PDF | Notes)
-    
+
     // Left panel (book list)
     GtkWidget *book_sidebar;
     GtkWidget *book_list;
-    
+    GtkWidget *delete_book_button;  // Delete book button
+
     // Center panel (PDF viewer)
     GtkWidget *pdf_container;
     GtkWidget *pdf_scrolled;
-    
+
     // Right panel (notes)
     GtkWidget *notes_container;
     NotesPanel *notes_panel;
-    
+
     // State
     Database *db;
     gboolean notes_visible;

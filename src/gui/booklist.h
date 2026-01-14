@@ -30,4 +30,9 @@ void booklist_setup_view(GtkTreeView *view);
  */
 int booklist_get_selected_id(GtkTreeView *view);
 
+/**
+ * Show add book dialog
+ */
+void booklist_show_add_dialog(GtkWidget *parent, Database *db, void (*on_success)(void *), void *data);
+
 #endif // BOOKNOTE_BOOKLIST_H
