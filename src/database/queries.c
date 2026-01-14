@@ -256,8 +256,8 @@ BnError db_note_insert(Database *db, Note *note) {
     }
     
     const char *sql = 
-        "INSERT INTO notes (book_id, content, page_number, created_at, updated_at) "
-        "VALUES (?, ?, ?, ?, ?);";
+        "INSERT INTO notes (book_id, title, content, page_number, created_at, updated_at) "
+        "VALUES (?, ?, ?, ?, ?, ?);";
     
     sqlite3_stmt *stmt;
     int rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
@@ -266,10 +266,11 @@ BnError db_note_insert(Database *db, Note *note) {
     }
     
     sqlite3_bind_int(stmt, 1, note->book_id);
-    sqlite3_bind_text(stmt, 2, note->content, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(stmt, 3, note->page_number);
-    sqlite3_bind_int64(stmt, 4, (sqlite3_int64)note->created_at);
-    sqlite3_bind_int64(stmt, 5, (sqlite3_int64)note->updated_at);
+    sqlite3_bind_text(stmt, 2, note->title, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, note->content, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 4, note->page_number);
+    sqlite3_bind_int64(stmt, 5, (sqlite3_int64)note->created_at);
+    sqlite3_bind_int64(stmt, 6, (sqlite3_int64)note->updated_at);
     
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
@@ -291,14 +292,13 @@ BnError db_note_get_by_id(Database *db, int id, Note **out_note) {
     return BN_ERROR_UNKNOWN;
 }
 
-
 BnError db_note_get_by_book(Database *db, int book_id, Note ***out_notes, int *out_count) {
     if (!db || !db->handle || !out_notes || !out_count || book_id <= 0) {
         return BN_ERROR_INVALID_ARG;
     }
     
     const char *sql = 
-        "SELECT id, book_id, content, page_number, created_at, updated_at "
+        "SELECT id, book_id, title, content, page_number, created_at, updated_at "
         "FROM notes WHERE book_id = ? ORDER BY created_at;";
     
     sqlite3_stmt *stmt;
@@ -347,12 +347,15 @@ BnError db_note_get_by_book(Database *db, int book_id, Note ***out_notes, int *o
         note->id = sqlite3_column_int(stmt, 0);
         note->book_id = sqlite3_column_int(stmt, 1);
         
-        const char *content = (const char *)sqlite3_column_text(stmt, 2);
+        const char *title = (const char *)sqlite3_column_text(stmt, 2);
+        note->title = strdup(title);
+        
+        const char *content = (const char *)sqlite3_column_text(stmt, 3);
         note->content = strdup(content);
         
-        note->page_number = sqlite3_column_int(stmt, 3);
-        note->created_at = (time_t)sqlite3_column_int64(stmt, 4);
-        note->updated_at = (time_t)sqlite3_column_int64(stmt, 5);
+        note->page_number = sqlite3_column_int(stmt, 4);
+        note->created_at = (time_t)sqlite3_column_int64(stmt, 5);
+        note->updated_at = (time_t)sqlite3_column_int64(stmt, 6);
         
         notes[i++] = note;
     }
@@ -363,6 +366,7 @@ BnError db_note_get_by_book(Database *db, int book_id, Note ***out_notes, int *o
     sqlite3_finalize(stmt);
     return BN_SUCCESS;
 }
+
 BnError db_note_update(Database *db, const Note *note) {
     // TODO: Implement (similar to db_book_update)
     (void)db;
@@ -383,7 +387,7 @@ BnError db_note_search(Database *db, const char *query, Note ***out_notes, int *
     }
     
     const char *sql = 
-        "SELECT n.id, n.book_id, n.content, n.page_number, n.created_at, n.updated_at "
+        "SELECT n.id, n.book_id, n.title, n.content, n.page_number, n.created_at, n.updated_at "
         "FROM notes n "
         "JOIN notes_fts fts ON n.id = fts.rowid "
         "WHERE fts.content MATCH ? "
@@ -435,12 +439,15 @@ BnError db_note_search(Database *db, const char *query, Note ***out_notes, int *
         note->id = sqlite3_column_int(stmt, 0);
         note->book_id = sqlite3_column_int(stmt, 1);
         
-        const char *content = (const char *)sqlite3_column_text(stmt, 2);
+        const char *title = (const char *)sqlite3_column_text(stmt, 2);
+        note->title = strdup(title);
+        
+        const char *content = (const char *)sqlite3_column_text(stmt, 3);
         note->content = strdup(content);
         
-        note->page_number = sqlite3_column_int(stmt, 3);
-        note->created_at = (time_t)sqlite3_column_int64(stmt, 4);
-        note->updated_at = (time_t)sqlite3_column_int64(stmt, 5);
+        note->page_number = sqlite3_column_int(stmt, 4);
+        note->created_at = (time_t)sqlite3_column_int64(stmt, 5);
+        note->updated_at = (time_t)sqlite3_column_int64(stmt, 6);
         
         notes[i++] = note;
     }

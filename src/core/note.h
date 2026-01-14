@@ -10,6 +10,7 @@
 typedef struct {
     int id;
     int book_id;         // Foreign key to books table
+    char *title;         // Note title
     char *content;       // Note text content
     int page_number;     // Page reference (0 if not page-specific)
     time_t created_at;
@@ -25,7 +26,7 @@ typedef struct {
  * @param page_number Page reference (0 for no specific page)
  * @return BN_SUCCESS on success, error code otherwise
  */
-BnError note_create(Note **out_note, int book_id, const char *content, int page_number);
+BnError note_create(Note **out, int book_id, const char *title, const char *content, int page_number);
 
 /**
  * Free note memory
@@ -41,5 +42,10 @@ BnError note_set_content(Note *note, const char *content);
  * Update note page number
  */
 BnError note_set_page(Note *note, int page_number);
+
+/**
+ * Set note title
+ */
+BnError note_set_title(Note *note, const char *title);
 
 #endif // BOOKNOTE_NOTE_H

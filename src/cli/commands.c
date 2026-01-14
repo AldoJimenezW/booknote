@@ -258,7 +258,7 @@ int cmd_note(Database *db, int argc, char **argv) {
     
     // Create note
     Note *note = NULL;
-    err = note_create(&note, book_id, content, page_number);
+    err = note_create(&note, book_id, NULL, content, page_number);
     if (err != BN_SUCCESS) {
         bn_print_error(err, "creating note");
         return 1;
