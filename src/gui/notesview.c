@@ -66,17 +66,24 @@ NotesPanel* notespanel_create(Database *db) {
     gtk_label_set_markup(GTK_LABEL(editor_label), "<b>Content</b>");
     gtk_box_pack_start(GTK_BOX(bottom_box), editor_label, FALSE, FALSE, 5);
     
-    // Scrolled window for editor
-    GtkWidget *editor_scroll = gtk_scrolled_window_new(NULL, NULL);
-    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(editor_scroll),
+    // Markdown editor (GtkTextView inside a scrolled window) with basic settings
+    GtkWidget *md_scroll = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(md_scroll),
                                    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-    
-    // TextView editor
-    panel->editor = gtk_text_view_new();
-    gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(panel->editor), GTK_WRAP_WORD);
-    gtk_text_view_set_editable(GTK_TEXT_VIEW(panel->editor), FALSE);
-    gtk_container_add(GTK_CONTAINER(editor_scroll), panel->editor);
-    gtk_box_pack_start(GTK_BOX(bottom_box), editor_scroll, TRUE, TRUE, 0);
+    GtkWidget *md_textview = gtk_text_view_new();
+    gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(md_textview), GTK_WRAP_WORD_CHAR);
+    gtk_text_view_set_left_margin(GTK_TEXT_VIEW(md_textview), 8);
+    gtk_text_view_set_right_margin(GTK_TEXT_VIEW(md_textview), 8);
+    PangoFontDescription *mono = pango_font_description_from_string("Monospace 11");
+    GtkStyleContext *ctx = gtk_widget_get_style_context(md_textview);
+    gtk_style_context_add_class(ctx, "markdown-textview");
+    pango_font_description_free(mono);
+    gtk_container_add(GTK_CONTAINER(md_scroll), md_textview);
+
+    panel->editor = md_scroll;
+    // Store the Markdown editor pointer for later access (preview/edit toggles can use this)
+    g_object_set_data(G_OBJECT(panel->editor), "markdown_textview", md_textview);
+    gtk_box_pack_start(GTK_BOX(bottom_box), panel->editor, TRUE, TRUE, 0);
     
     // Button box
     GtkWidget *button_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
@@ -112,9 +119,11 @@ void notespanel_load_book(NotesPanel *panel, int book_id) {
     panel->current_note_id = -1;
     
     // Clear editor
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(panel->editor));
-    gtk_text_buffer_set_text(buffer, "", -1);
-    gtk_text_view_set_editable(GTK_TEXT_VIEW(panel->editor), FALSE);
+    OrgModeEditor *org = (OrgModeEditor *)g_object_get_data(G_OBJECT(panel->editor), "orgmode_editor");
+    if (org && org->buffer) {
+        gtk_text_buffer_set_text(org->buffer, "", -1);
+        gtk_text_view_set_editable(GTK_TEXT_VIEW(org->text_view), FALSE);
+    }
     gtk_widget_set_sensitive(panel->save_button, FALSE);
     gtk_widget_set_sensitive(panel->delete_button, FALSE);
     
@@ -157,8 +166,8 @@ void notespanel_load_book(NotesPanel *panel, int book_id) {
     gtk_tree_view_set_model(GTK_TREE_VIEW(panel->notes_list), GTK_TREE_MODEL(store));
     g_object_unref(store);
     
-    if (count == 0) {
-        gtk_text_buffer_set_text(buffer, "No notes yet.\n\nClick '+ New Note' to create one.", -1);
+    if (count == 0 && org && org->buffer) {
+        gtk_text_buffer_set_text(org->buffer, "No notes yet.\n\nClick '+ New Note' to create one.", -1);
     }
 }
 
@@ -172,9 +181,12 @@ void notespanel_clear(NotesPanel *panel) {
     gtk_tree_view_set_model(GTK_TREE_VIEW(panel->notes_list), NULL);
     
     // Clear editor
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(panel->editor));
-    gtk_text_buffer_set_text(buffer, "Select a book to view notes", -1);
-    gtk_text_view_set_editable(GTK_TEXT_VIEW(panel->editor), FALSE);
+    GtkWidget *md_textview = (GtkWidget *)g_object_get_data(G_OBJECT(panel->editor), "markdown_textview");
+    if (md_textview) {
+        GtkTextBuffer *buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(md_textview));
+        gtk_text_buffer_set_text(buf, "Select a book to view notes", -1);
+        gtk_text_view_set_editable(GTK_TEXT_VIEW(md_textview), FALSE);
+    }
     
     gtk_widget_set_sensitive(panel->save_button, FALSE);
     gtk_widget_set_sensitive(panel->delete_button, FALSE);
@@ -182,6 +194,8 @@ void notespanel_clear(NotesPanel *panel) {
 
 void notespanel_destroy(NotesPanel *panel) {
     if (!panel) return;
+    // Clear Markdown editor pointer if present
+    g_object_set_data(G_OBJECT(panel->editor), "markdown_textview", NULL);
     free(panel);
 }
 
@@ -212,9 +226,11 @@ static void on_note_selected(GtkTreeView *view, gpointer data) {
     // Find our note
     for (int i = 0; i < count; i++) {
         if (notes[i]->id == note_id) {
-            GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(panel->editor));
-            gtk_text_buffer_set_text(buffer, notes[i]->content, -1);
-            gtk_text_view_set_editable(GTK_TEXT_VIEW(panel->editor), TRUE);
+            OrgModeEditor *org = (OrgModeEditor *)g_object_get_data(G_OBJECT(panel->editor), "orgmode_editor");
+            if (org && org->buffer) {
+                gtk_text_buffer_set_text(org->buffer, notes[i]->content, -1);
+                gtk_text_view_set_editable(GTK_TEXT_VIEW(org->text_view), TRUE);
+            }
             
             gtk_widget_set_sensitive(panel->save_button, TRUE);
             gtk_widget_set_sensitive(panel->delete_button, TRUE);
@@ -234,10 +250,11 @@ static void on_save_clicked(GtkWidget *widget, gpointer data) {
     if (panel->current_note_id <= 0) return;
     
     // Get content from editor
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(panel->editor));
+    OrgModeEditor *org = (OrgModeEditor *)g_object_get_data(G_OBJECT(panel->editor), "orgmode_editor");
+    if (!org || !org->buffer) return;
     GtkTextIter start, end;
-    gtk_text_buffer_get_bounds(buffer, &start, &end);
-    char *content = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
+    gtk_text_buffer_get_bounds(org->buffer, &start, &end);
+    char *content = gtk_text_buffer_get_text(org->buffer, &start, &end, FALSE);
     
     // Load current note to update
     Note **notes = NULL;
@@ -312,9 +329,11 @@ static void on_delete_clicked(GtkWidget *widget, gpointer data) {
             panel->current_note_id = -1;
             
             // Clear editor
-            GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(panel->editor));
-            gtk_text_buffer_set_text(buffer, "", -1);
-            gtk_text_view_set_editable(GTK_TEXT_VIEW(panel->editor), FALSE);
+            OrgModeEditor *org = (OrgModeEditor *)g_object_get_data(G_OBJECT(panel->editor), "orgmode_editor");
+            if (org && org->buffer) {
+                gtk_text_buffer_set_text(org->buffer, "", -1);
+                gtk_text_view_set_editable(GTK_TEXT_VIEW(org->text_view), FALSE);
+            }
             gtk_widget_set_sensitive(panel->save_button, FALSE);
             gtk_widget_set_sensitive(panel->delete_button, FALSE);
             

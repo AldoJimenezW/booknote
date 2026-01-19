@@ -12,6 +12,7 @@ const char *SQL_CREATE_BOOKS_TABLE =
     "  year INTEGER,"
     "  publisher TEXT,"
     "  filepath TEXT NOT NULL UNIQUE,"
+    "  cover_path TEXT,"
     "  added_at INTEGER NOT NULL,"
     "  updated_at INTEGER NOT NULL"
     ");";
@@ -114,7 +115,7 @@ BnError schema_initialize(sqlite3 *db) {
 
     // Set schema version if not exists (for new databases)
     const char *insert_version =
-        "INSERT OR IGNORE INTO metadata (key, value) VALUES ('schema_version', '2');";
+        "INSERT OR IGNORE INTO metadata (key, value) VALUES ('schema_version', '3');";
     err = execute_sql(db, insert_version);
     if (err != BN_SUCCESS) return err;
 
@@ -128,6 +129,23 @@ BnError schema_initialize(sqlite3 *db) {
         if (err != BN_SUCCESS) {
             return err;
         }
+        version = 2;
+    }
+    if (ver_err == BN_SUCCESS && version < 3) {
+        printf("Migrating database to version 3...\n");
+        // Add cover_path column to books table (backward-compatible)
+        const char *sql = "ALTER TABLE books ADD COLUMN cover_path TEXT;";
+        err = execute_sql(db, sql);
+        if (err != BN_SUCCESS) {
+            return err;
+        }
+        // Update schema version
+        const char *update_version = "UPDATE metadata SET value = '3' WHERE key = 'schema_version';";
+        err = execute_sql(db, update_version);
+        if (err != BN_SUCCESS) {
+            return err;
+        }
+        printf("Migration to v3 complete\n");
     }
 
     return BN_SUCCESS;

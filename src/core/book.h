@@ -15,6 +15,7 @@ typedef struct {
     int year;          // 0 if unknown
     char *publisher;   // Nullable
     char *filepath;    // Path to PDF file
+    char *cover_path;  // Optional path to cached cover image (e.g., ~/.cache/booknote/covers/{isbn}.jpg)
     time_t added_at;
     time_t updated_at;
 } Book;

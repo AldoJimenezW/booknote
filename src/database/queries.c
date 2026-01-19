@@ -14,8 +14,8 @@ BnError db_book_insert(Database *db, Book *book) {
     }
     
     const char *sql = 
-        "INSERT INTO books (isbn, title, author, year, publisher, filepath, added_at, updated_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
+        "INSERT INTO books (isbn, title, author, year, publisher, filepath, cover_path, added_at, updated_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
     
     sqlite3_stmt *stmt;
     int rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
@@ -30,8 +30,9 @@ BnError db_book_insert(Database *db, Book *book) {
     sqlite3_bind_int(stmt, 4, book->year);
     sqlite3_bind_text(stmt, 5, book->publisher, -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 6, book->filepath, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int64(stmt, 7, (sqlite3_int64)book->added_at);
-    sqlite3_bind_int64(stmt, 8, (sqlite3_int64)book->updated_at);
+    sqlite3_bind_text(stmt, 7, book->cover_path, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int64(stmt, 8, (sqlite3_int64)book->added_at);
+    sqlite3_bind_int64(stmt, 9, (sqlite3_int64)book->updated_at);
     
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
@@ -52,7 +53,7 @@ BnError db_book_get_by_id(Database *db, int id, Book **out_book) {
     }
     
     const char *sql = 
-        "SELECT id, isbn, title, author, year, publisher, filepath, added_at, updated_at "
+        "SELECT id, isbn, title, author, year, publisher, filepath, cover_path, added_at, updated_at "
         "FROM books WHERE id = ?;";
     
     sqlite3_stmt *stmt;
@@ -89,9 +90,12 @@ BnError db_book_get_by_id(Database *db, int id, Book **out_book) {
         
         const char *filepath = (const char *)sqlite3_column_text(stmt, 6);
         book->filepath = strdup(filepath);
+
+        const char *cover_path = (const char *)sqlite3_column_text(stmt, 7);
+        book->cover_path = cover_path ? strdup(cover_path) : NULL;
         
-        book->added_at = (time_t)sqlite3_column_int64(stmt, 7);
-        book->updated_at = (time_t)sqlite3_column_int64(stmt, 8);
+        book->added_at = (time_t)sqlite3_column_int64(stmt, 8);
+        book->updated_at = (time_t)sqlite3_column_int64(stmt, 9);
         
         *out_book = book;
         sqlite3_finalize(stmt);
@@ -111,7 +115,7 @@ BnError db_book_get_all(Database *db, Book ***out_books, int *out_count) {
     }
     
     const char *sql = 
-        "SELECT id, isbn, title, author, year, publisher, filepath, added_at, updated_at "
+        "SELECT id, isbn, title, author, year, publisher, filepath, cover_path, added_at, updated_at "
         "FROM books ORDER BY title;";
     
     sqlite3_stmt *stmt;
@@ -173,9 +177,12 @@ BnError db_book_get_all(Database *db, Book ***out_books, int *out_count) {
         
         const char *filepath = (const char *)sqlite3_column_text(stmt, 6);
         book->filepath = strdup(filepath);
+
+        const char *cover_path = (const char *)sqlite3_column_text(stmt, 7);
+        book->cover_path = cover_path ? strdup(cover_path) : NULL;
         
-        book->added_at = (time_t)sqlite3_column_int64(stmt, 7);
-        book->updated_at = (time_t)sqlite3_column_int64(stmt, 8);
+        book->added_at = (time_t)sqlite3_column_int64(stmt, 8);
+        book->updated_at = (time_t)sqlite3_column_int64(stmt, 9);
         
         books[i++] = book;
     }
@@ -194,7 +201,7 @@ BnError db_book_update(Database *db, const Book *book) {
     
     const char *sql = 
         "UPDATE books SET isbn = ?, title = ?, author = ?, year = ?, "
-        "publisher = ?, filepath = ?, updated_at = ? WHERE id = ?;";
+        "publisher = ?, filepath = ?, cover_path = ?, updated_at = ? WHERE id = ?;";
     
     sqlite3_stmt *stmt;
     int rc = sqlite3_prepare_v2(db->handle, sql, -1, &stmt, NULL);
@@ -208,8 +215,9 @@ BnError db_book_update(Database *db, const Book *book) {
     sqlite3_bind_int(stmt, 4, book->year);
     sqlite3_bind_text(stmt, 5, book->publisher, -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 6, book->filepath, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int64(stmt, 7, (sqlite3_int64)book->updated_at);
-    sqlite3_bind_int(stmt, 8, book->id);
+    sqlite3_bind_text(stmt, 7, book->cover_path, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int64(stmt, 8, (sqlite3_int64)book->updated_at);
+    sqlite3_bind_int(stmt, 9, book->id);
     
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);

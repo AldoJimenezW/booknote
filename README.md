@@ -1,4 +1,114 @@
-# booknote
+# Booknote v1.0.0
+
+A minimalist personal library manager with a clean Dark Academia-inspired UI. This release introduces a simplified Markdown notes editor and full CRUD actions for books directly in the Library view.
+
+## What’s new in v1.0.0
+- Notes:
+  - Replaced the previous Org-mode renderer with a well-supported Markdown editor for reliability and clarity.
+  - Live formatting with common Markdown inline styles and code blocks.
+- Library:
+  - Added Edit and Delete actions for books from the Library header and/or card actions.
+  - Improved “Add Book” flow with a file chooser for PDFs and metadata autofill via ISBN.
+  - Fallback cover generation from the first page of the PDF using Poppler + Cairo.
+- UI/UX:
+  - Polished Dark Academia CSS with consistent styles for headers, buttons, cards, and focus rings.
+  - Navigation via GtkStack between Library and Reading views with smooth transitions.
+
+## Features
+- Library view with book cards (cover, title, author).
+- Reading view with a PDF viewer and a Markdown notes panel.
+- ISBN metadata fetch and cover download from OpenLibrary (with caching).
+- Cover fallback rendering from PDFs when ISBN covers are unavailable.
+- CRUD:
+  - Add Book (with ISBN fetch and PDF chooser).
+  - Edit Book (title, author, publisher, year, filepath, ISBN).
+  - Delete Book (with confirmation).
+- Keyboard shortcuts:
+  - Ctrl+Q: Quit
+  - Ctrl+L: Go to Library
+  - Ctrl+B: Toggle notes panel
+
+## Build and Run
+Dependencies (Debian/Ubuntu):
+- GTK3: libgtk-3-dev
+- Poppler GLib: libpoppler-glib-dev
+- SQLite3: libsqlite3-dev
+- cURL: libcurl4-openssl-dev
+- JSON-C: libjson-c-dev
+- pkg-config, build-essential
+
+Build:
+- make booknote-gui
+
+Run:
+- ./booknote-gui
+
+## Usage Guide
+
+### Library View
+- Add Book:
+  - Click “+ Add Book”.
+  - Optionally enter an ISBN and click “Fetch from ISBN” to auto-fill metadata and get a cover.
+  - Select the PDF with the file chooser.
+  - Click “Add” to insert it into your library.
+- Edit Selected:
+  - Select a book card to focus it.
+  - Click “Edit Selected” to open the edit dialog.
+  - Modify metadata and/or change the PDF.
+  - Save to update the database.
+- Delete Selected:
+  - Select a book card.
+  - Click “Delete Selected”.
+  - Confirm deletion.
+
+### Reading View
+- Shows the PDF on the left and the Markdown notes panel on the right.
+- Use Ctrl+B to toggle the notes panel.
+- Notes support:
+  - Inline: bold, italic, code.
+  - Links: standard Markdown links.
+  - Blocks: fenced code blocks.
+  - Lists: ordered and unordered.
+- Notes are saved per book and persist across sessions.
+
+## Markdown Examples
+Inline:
+- Bold: **bold text**
+- Italic: _italic text_
+- Code: `inline_code()`
+- Link: [Org-mode Docs](https://orgmode.org)
+
+Lists:
+- Unordered:
+  - Item A
+  - Item B
+- Ordered:
+  1. First
+  2. Second
+
+Code blocks:
+``` 
+```c
+#include <stdio.h>
+int main(void) {
+    printf("Hello, Markdown!\n");
+    return 0;
+}
+```
+```
+
+## Covers and Caching
+- ISBN covers are downloaded to ~/.cache/booknote/covers/{isbn}.jpg
+- If no ISBN cover is found, Booknote renders the first page of the PDF at a suitable thumbnail size and caches it.
+
+## Roadmap
+- Preferences for notes (debounce, theme).
+- Improved accessibility and keyboard navigation.
+- Export notes to Markdown files.
+- Better error feedback for network/IO.
+
+## License
+See LICENSE for details.
 
 Note-taking for technical books. Simple, fast, local-first.
 

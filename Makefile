@@ -3,8 +3,8 @@ CFLAGS = -Wall -Wextra -std=c11 -g -O0
 LIBS = -lsqlite3
 
 # GTK and Poppler flags
-GUI_CFLAGS = $(shell pkg-config --cflags gtk+-3.0 poppler-glib)
-GUI_LIBS = $(shell pkg-config --libs gtk+-3.0 poppler-glib)
+GUI_CFLAGS = $(shell pkg-config --cflags gtk+-3.0 poppler-glib libcurl json-c)
+GUI_LIBS = $(shell pkg-config --libs gtk+-3.0 poppler-glib libcurl json-c) -lm
 
 # Targets
 TARGET_CLI = booknote
@@ -21,13 +21,14 @@ CLI_SRCS = src/main.c \
            src/cli/commands.c
 
 # GUI source files  
-GUI_SRCS = src/gui/main.c src/gui/window.c src/gui/booklist.c src/gui/notesview.c src/gui/pdfviewer.c \
-           src/utils/error.c \
-           src/core/book.c \
-           src/core/note.c \
-           src/database/db.c \
-           src/database/schema.c \
-           src/database/queries.c
+GUI_SRCS = src/gui/main.c src/gui/window.c src/gui/booklist.c src/gui/notesview.c src/gui/pdfviewer.c src/gui/libraryview.c \
+            src/external/isbn.c src/external/cover.c \
+            src/utils/error.c \
+            src/core/book.c \
+            src/core/note.c \
+            src/database/db.c \
+            src/database/schema.c \
+            src/database/queries.c
 
 CLI_OBJS = $(CLI_SRCS:.c=.o)
 GUI_OBJS = $(GUI_SRCS:.c=.o)
@@ -42,11 +43,15 @@ $(TARGET_CLI): $(CLI_OBJS)
 
 # GUI binary
 $(TARGET_GUI): $(GUI_OBJS)
-	$(CC) $(CFLAGS) $(GUI_CFLAGS) -o $@ $^ $(LIBS) $(GUI_LIBS)
+	$(CC) $(CFLAGS) $(GUI_CFLAGS) -o $@ $^ $(LIBS) $(GUI_LIBS) -Wl,-z,noexecstack
 	@echo "GUI build complete: ./$(TARGET_GUI)"
 
 # Pattern rule for GUI objects
 src/gui/%.o: src/gui/%.c
+	$(CC) $(CFLAGS) $(GUI_CFLAGS) -c $< -o $@
+
+# Pattern rule for external objects (need GUI_CFLAGS for headers)
+src/external/%.o: src/external/%.c
 	$(CC) $(CFLAGS) $(GUI_CFLAGS) -c $< -o $@
 
 # Pattern rule for all other objects

@@ -1,0 +1,283 @@
+/*
+booknote/src/gui/style.css
+Dark Academia theme for Booknote GUI (GTK3 CSS)
+
+Palette:
+- Background: #1e1e1e
+- Cards: #2d2d2d
+- Text: #e0e0e0
+- Accent: #d4af37
+- Border: #3a3a3a
+- Hover: #363636
+*/
+
+@define-color bn-bg #1e1e1e;
+@define-color bn-card #2d2d2d;
+@define-color bn-text #e0e0e0;
+@define-color bn-accent #d4af37;
+@define-color bn-border #3a3a3a;
+@define-color bn-hover #363636;
+
+/* Global window background and default text color */
+window,
+GtkWindow {
+  background-color: @bn-bg;
+  color: @bn-text;
+}
+
+/* Generic container defaults */
+box,
+GtkBox {
+  background-color: @bn-bg;
+  color: @bn-text;
+}
+
+/* Header labels and titles */
+label.title,
+.header-title {
+  color: @bn-text;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+label.subtitle,
+.header-subtitle {
+  color: mix(@bn-text, @bn-bg, 0.35);
+  font-size: 13px;
+}
+
+/* MenuBar */
+menubar,
+GtkMenuBar {
+  background-color: @bn-card;
+  border-bottom: 1px solid @bn-border;
+}
+
+menuitem,
+GtkMenuItem {
+  color: @bn-text;
+  padding: 6px 10px;
+}
+
+menuitem:selected,
+GtkMenuItem:selected {
+  background-color: @bn-hover;
+  color: @bn-text;
+}
+
+/* Buttons */
+button,
+GtkButton {
+  background-color: @bn-card;
+  color: @bn-text;
+  border: 1px solid @bn-border;
+  border-radius: 6px;
+  padding: 8px 14px;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.3);
+  transition: background-color 120ms ease-in-out, border-color 120ms ease-in-out, box-shadow 120ms ease-in-out;
+}
+
+button:hover,
+GtkButton:hover {
+  background-color: @bn-hover;
+  border-color: @bn-accent;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+
+button:active,
+GtkButton:active {
+  background-color: shade(@bn-hover, 0.9);
+  border-color: shade(@bn-accent, 0.9);
+}
+
+/* Accent button variant (e.g., primary actions) */
+button.accent,
+GtkButton.accent {
+  background-color: @bn-accent;
+  color: #1b1b1b;
+  border-color: shade(@bn-accent, 0.85);
+}
+
+button.accent:hover,
+GtkButton.accent:hover {
+  background-color: shade(@bn-accent, 1.08);
+}
+
+/* FlowBox Cards (Library View) */
+flowboxchild,
+GtkFlowBoxChild {
+  background-color: @bn-card;
+  border: 1px solid @bn-border;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.28);
+  transition: transform 120ms ease-out, box-shadow 120ms ease-in-out, border-color 120ms ease-in-out, background-color 120ms ease-in-out;
+  padding: 0; /* card buttons will handle internal padding */
+}
+
+flowboxchild:hover,
+GtkFlowBoxChild:hover {
+  /* transform removed for GTK3 compatibility */
+  box-shadow: 0 8px 16px rgba(0,0,0,0.35);
+  border-color: @bn-accent;
+}
+
+/* Card Button (container inside FlowBoxChild) */
+button.card,
+GtkButton.card {
+  background-color: transparent; /* inherit from parent */
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+button.card:hover,
+GtkButton.card:hover {
+  background-color: transparent;
+}
+
+/* Card content layout helpers */
+.card-box {
+  padding: 15px;
+}
+
+.card-title {
+  color: @bn-text;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.card-author {
+  color: mix(@bn-text, @bn-bg, 0.35);
+  font-size: 12px;
+}
+
+/* Images (covers) */
+image,
+GtkImage {
+  border-radius: 6px;
+  border: 1px solid @bn-border;
+}
+
+/* Header bar in Reading View */
+.reading-header {
+  background-color: @bn-card;
+  border-bottom: 1px solid @bn-border;
+}
+
+/* Paned divider styling */
+paned,
+GtkPaned {
+  background-color: @bn-bg;
+  border-color: @bn-border;
+}
+
+paned > separator,
+GtkPaned > separator {
+  background-color: @bn-border;
+}
+
+/* Scrolled windows */
+scrolledwindow,
+GtkScrolledWindow {
+  background-color: @bn-bg;
+  border: 1px solid @bn-border;
+  border-radius: 8px;
+}
+
+/* TreeView (Notes list and Booklist legacy) */
+treeview,
+GtkTreeView {
+  background-color: @bn-card;
+  color: @bn-text;
+  border: 1px solid @bn-border;
+  border-radius: 6px;
+}
+
+treeview.view,
+GtkTreeView.view {
+  /* grid-line-width removed for GTK3 compatibility */
+}
+
+treeview header,
+GtkTreeView GtkButton {
+  background-color: shade(@bn-card, 1.06);
+  color: @bn-text;
+  border-bottom: 1px solid @bn-border;
+}
+
+treeview row:selected,
+GtkTreeView row:selected {
+  background-color: @bn-hover;
+  color: @bn-text;
+}
+
+/* TextView and OrgMode editor */
+textview,
+GtkTextView {
+  background-color: @bn-bg;
+  color: @bn-text;
+  border: 1px solid @bn-border;
+  border-radius: 6px;
+  padding: 8px;
+}
+
+/* Inline link style fallback (if tag not applied) */
+.link {
+  color: #5ea0ff;
+  text-decoration: underline;
+}
+
+/* Accent separators / small decorative lines */
+.separator-accent {
+  background-color: @bn-accent;
+  min-height: 1px;
+}
+
+/* Utility spacing */
+.spacing-16 {
+  padding: 16px;
+}
+
+.spacing-24 {
+  padding: 24px;
+}
+
+/* Add Book button in Library Header */
+#add-book-button {
+  background-color: @bn-card;
+  color: @bn-text;
+  border: 1px solid @bn-border;
+  border-radius: 6px;
+  padding: 8px 14px;
+}
+
+#add-book-button:hover {
+  background-color: @bn-hover;
+  border-color: @bn-accent;
+}
+
+/* Back button in Reading View header */
+#back-button {
+  background-color: transparent;
+  color: @bn-text;
+  border: 1px solid @bn-border;
+  border-radius: 6px;
+  padding: 6px 12px;
+}
+
+#back-button:hover {
+  background-color: @bn-hover;
+  border-color: @bn-accent;
+}
+
+/* Subtle focus ring for keyboard navigation */
+*:focus {
+  outline-color: @bn-accent;
+  outline-style: solid;
+  outline-width: 1px;
+}
+
+.markdown-textview {
+  font-family: Monospace, monospace;
+  font-size: 11pt;
+}

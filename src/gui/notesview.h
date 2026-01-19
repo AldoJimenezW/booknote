@@ -3,6 +3,7 @@
 
 #include <gtk/gtk.h>
 #include "../database/db.h"
+#include "orgmode.h"
 #include "../core/note.h"
 
 /**

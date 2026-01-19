@@ -5,6 +5,14 @@
 
 int main(int argc, char **argv) {
     gtk_init(&argc, &argv);
+
+    // Load CSS stylesheet
+    GtkCssProvider *provider = gtk_css_provider_new();
+    gtk_css_provider_load_from_path(provider, "src/gui/style.css", NULL);
+    gtk_style_context_add_provider_for_screen(
+        gdk_screen_get_default(),
+        GTK_STYLE_PROVIDER(provider),
+        GTK_STYLE_PROVIDER_PRIORITY_USER);
     
     // Open database
     Database *db = NULL;
@@ -27,7 +35,7 @@ int main(int argc, char **argv) {
     printf("\nKeyboard shortcuts:\n");
     printf("  Ctrl+Q - Quit\n");
     printf("  Ctrl+B - Toggle notes panel\n");
-    printf("  Ctrl+L - Toggle sidebar\n");
+    printf("  Ctrl+L - Show library view\n");
     
     // Create main window
     MainWindow *win = window_create(db);
