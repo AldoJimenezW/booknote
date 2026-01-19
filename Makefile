@@ -21,7 +21,7 @@ CLI_SRCS = src/main.c \
            src/cli/commands.c
 
 # GUI source files  
-GUI_SRCS = src/gui/main.c src/gui/window.c src/gui/booklist.c src/gui/notesview.c \
+GUI_SRCS = src/gui/main.c src/gui/window.c src/gui/booklist.c src/gui/notesview.c src/gui/pdfviewer.c \
            src/utils/error.c \
            src/core/book.c \
            src/core/note.c \

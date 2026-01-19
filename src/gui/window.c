@@ -62,6 +62,23 @@ static void on_book_selected(GtkTreeView *view, gpointer data) {
 
     win->current_book_id = book_id;
 
+    // Load PDF
+    Book *book = NULL;
+    BnError err = db_book_get_by_id(win->db, book_id, &book);
+    if (err == BN_SUCCESS && book) {
+        if (!pdfviewer_load_file(win->pdf_viewer, book->filepath)) {
+            // Show error if PDF fails to load
+            GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(win->window),
+                GTK_DIALOG_MODAL,
+                GTK_MESSAGE_ERROR,
+                GTK_BUTTONS_OK,
+                "Failed to load PDF: %s", book->filepath);
+            gtk_dialog_run(GTK_DIALOG(dialog));
+            gtk_widget_destroy(dialog);
+        }
+        book_free(book);
+    }
+
     // Load notes for selected book
     notespanel_load_book(win->notes_panel, book_id);
 
@@ -281,32 +298,9 @@ MainWindow* window_create(Database *db) {
     gtk_paned_pack2(GTK_PANED(win->main_paned), win->content_paned, TRUE, TRUE);
 
     // Center panel - PDF viewer
-    win->pdf_container = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    win->pdf_viewer = pdfviewer_create();
+    gtk_paned_pack1(GTK_PANED(win->content_paned), win->pdf_viewer->container, TRUE, TRUE);
 
-    GtkWidget *pdf_label = gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(pdf_label), "<b>PDF Viewer</b>");
-    gtk_box_pack_start(GTK_BOX(win->pdf_container), pdf_label, FALSE, FALSE, 10);
-
-    win->pdf_scrolled = gtk_scrolled_window_new(NULL, NULL);
-    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(win->pdf_scrolled),
-                                   GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-
-    GtkWidget *pdf_placeholder = gtk_label_new(
-        "PDF viewer will render here\n\n"
-        "Select a book from the sidebar"
-    );
-    gtk_container_add(GTK_CONTAINER(win->pdf_scrolled), pdf_placeholder);
-    gtk_box_pack_start(GTK_BOX(win->pdf_container), win->pdf_scrolled, TRUE, TRUE, 0);
-
-    // Navigation controls
-    GtkWidget *nav_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
-    gtk_box_pack_start(GTK_BOX(nav_box), gtk_button_new_with_label("<"), FALSE, FALSE, 5);
-    gtk_box_pack_start(GTK_BOX(nav_box), gtk_label_new("Page 1 / 1"), TRUE, FALSE, 5);
-    gtk_box_pack_start(GTK_BOX(nav_box), gtk_button_new_with_label(">"), FALSE, FALSE, 5);
-    gtk_box_pack_start(GTK_BOX(nav_box), gtk_button_new_with_label("100%"), FALSE, FALSE, 5);
-    gtk_box_pack_start(GTK_BOX(win->pdf_container), nav_box, FALSE, FALSE, 5);
-
-    gtk_paned_pack1(GTK_PANED(win->content_paned), win->pdf_container, TRUE, TRUE);
 
     // Right panel - Notes
     win->notes_panel = notespanel_create(db);

@@ -3,6 +3,7 @@
 
 #include <gtk/gtk.h>
 #include "notesview.h"
+#include "pdfviewer.h"
 #include "../database/db.h"
 
 /**
@@ -19,8 +20,7 @@ typedef struct {
     GtkWidget *delete_book_button;  // Delete book button
 
     // Center panel (PDF viewer)
-    GtkWidget *pdf_container;
-    GtkWidget *pdf_scrolled;
+    PDFViewer *pdf_viewer;
 
     // Right panel (notes)
     GtkWidget *notes_container;
