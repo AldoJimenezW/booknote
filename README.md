@@ -2,6 +2,10 @@
 
 A minimalist personal library manager with a clean Dark Academia-inspired UI. This release introduces a simplified Markdown notes editor and full CRUD actions for books directly in the Library view.
 
+## Motivation
+
+i whant to take notes of a books while i am reading but this proccess whas a pain to do in other app because you cannot open your PDF's or EPUB's files on that. So this program is fully enfocated on improve the reading expirience.
+
 ## What’s new in v1.0.0
 - Notes:
   - Replaced the previous Org-mode renderer with a well-supported Markdown editor for reliability and clarity.
